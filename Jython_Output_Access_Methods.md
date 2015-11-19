@@ -1,0 +1,310 @@
+# Access Methods #
+**Table of contents**
+
+
+## Introduction ##
+
+uimaFIT supports several convenient methods to access the annotations added by the pipelines components. In the previous code examples we mainly used `select` to select all annotations of a certain types. In this tutorial we will introduce the different methods in a more structured way and will show some handy code examples.
+
+
+
+
+## Annotations and Type System ##
+As mentioned in the introduction, UIMA uses the concept of annotations. Each information, for example the part-of-speech-tag for a word, is added as an annotation to the CAS (Common Analysis System). Different annotations are represented by different types, e.g. there are types for part-of-speech information, types for the lemma of word, types for named entity information and so on. Understanding which annotations with which types are added by a component is a crucial part for further using the results. For an overview of the type system used by DKPro, please see the following page in the main DKPro wiki: [DKPro Type System](https://code.google.com/p/dkpro-core-asl/wiki/TypeSystem).
+
+The following script runs some components like POS-tagging and NER and then prints **all** annotations that are added to the CAS.
+
+```
+#!/usr/bin/env jython
+# Filename: print_all_annotations.jy
+"""
+Reads in a specific text file, runs several analysis components, and then prints all annotation types
+Run by: jython print_all_annotations.jy <filename> <language-code>
+"""
+
+
+# Fix classpath scanning - otherise uimaFIT will not find the UIMA types
+from java.lang import Thread
+from org.python.core.imp import *
+Thread.currentThread().contextClassLoader = getSyspathJavaLoader()
+
+# Dependencies and imports for DKPro modules
+from jip.embed import require
+
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+
+# StanfordNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.stanfordnlp-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.stanfordnlp import *
+
+# OpenNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.opennlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.opennlp import *
+
+
+# Dependencies for selecting specific annotations like sentences/tokens
+from org.apache.uima.jcas.tcas import Annotation
+
+
+# uimaFIT imports
+from org.apache.uima.fit.util.JCasUtil import *
+from org.apache.uima.fit.pipeline.SimplePipeline import *
+from org.apache.uima.fit.factory.CollectionReaderFactory import *
+from org.apache.uima.fit.factory.AnalysisEngineFactory import *
+
+
+# Access to commandline arguments
+import sys
+
+# Check that all necessary arguments have been passed to the program
+if len(sys.argv) < 3:
+    print globals()['__doc__'] % locals()
+    sys.exit(1)
+
+
+
+# Assemble and run pipeline
+pipeline = iteratePipeline(
+  createReaderDescription(TextReader,
+    TextReader.PARAM_SOURCE_LOCATION, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     ),
+  createEngineDescription(OpenNlpSegmenter),
+  createEngineDescription(OpenNlpPosTagger),
+  createEngineDescription(StanfordLemmatizer),
+  createEngineDescription(StanfordNamedEntityRecognizer)
+  );
+
+for jcas in pipeline:
+    print "[Type][Parent Type](Begin, End) CoveredText:"
+    for ann in select(jcas, Annotation):
+        print "[%s][%s](%d, %d) %s" %(ann.getType().getName(), ann.getClass().getSuperclass().getName(), ann.getBegin(), ann.getEnd(), ann.getCoveredText())
+        print ann
+```
+
+
+You can execute this script by calling:
+```
+jython print_all_annotations.jy examples/example-en.txt en
+```
+
+The output will be quite long and look a bit confusing in the beginning. Here are the first lines of the output:
+
+```
+[de.tudarmstadt.ukp.dkpro.core.api.metadata.type.DocumentMetaData][org.apache.uima.jcas.tcas.DocumentAnnotation](0, 120) Some students like to study in the mornings. Other students like to do so in the evenings. And some don't study at all.
+DocumentMetaData
+   sofa: _InitialView
+   begin: 0
+   end: 120
+   language: "en"
+   documentTitle: ""
+   documentId: ""
+   documentUri: "file:/home/reimers/examples/example-en.txt"
+   collectionId: "file:/home/reimers/examples/"
+   documentBaseUri: "file:/home/reimers/examples/"
+   isLastSegment: false
+
+
+[de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Sentence][org.apache.uima.jcas.tcas.Annotation](0, 44) Some students like to study in the mornings.
+Sentence
+   sofa: _InitialView
+   begin: 0
+   end: 44
+
+[de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Lemma][org.apache.uima.jcas.tcas.Annotation](0, 4) Some
+Lemma
+   sofa: _InitialView
+   begin: 0
+   end: 4
+   value: "some"
+
+[de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token][org.apache.uima.jcas.tcas.Annotation](0, 4) Some
+Token
+   sofa: _InitialView
+   begin: 0
+   end: 4
+   parent: <null>
+   lemma: Lemma
+      sofa: _InitialView
+      begin: 0
+      end: 4
+      value: "some"
+   stem: <null>
+   pos: ART
+      sofa: _InitialView
+      begin: 0
+      end: 4
+      PosValue: "DT"
+
+[de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.ART][de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS](0, 4) Some
+ART
+   sofa: _InitialView
+   begin: 0
+   end: 4
+   PosValue: "DT"
+
+```
+
+The different annotations are separated by an empty line. The information in the first two square-brackets are the type and the parent-type. For example for the last paragraph in the above output. There, we have the type `de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.ART` and the parent of this annotation is of type `de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos.POS`. The POS-tagger adds for each article an annotation of type `ART`. This type, as well as all other POS-types, are derived from the `POS`-type. So in case we like to get all articles, we can either use the `select`-method and search only for annotations of type `ART` or we can select als `POS`-annotations and then check the `PosValue` for the correct type (later more).
+
+Below the class and superclass, you can find accessible fields for the types. So for example for the POS-annotation of _Some_ you cann access the `sofa`, the `begin`, the `end` and the `PosValue`-attributes. The `sofa` (Subject of Analysis) contains the used view. You can have different views on one text, for example you could have a view containing the English version of a text and a different view containing the corresponding German version of the same text. By using different views / Sofas, you can process both versions in a single pipeline. But usually we have only a single view, the `_InitialView`.
+
+`begin` and `end` stands for the beginning and ending of the annotation, i.e. in this case the annotation spans from character 0 to character 4. The final attribute you can access for the above example is the `PosValue`, which contains the more specific POS information. In this case, _Some_ is tagged as a `DT`.
+
+
+The different attributes can easily be accessed within Jython by calling `myVariableName.attributeName`. **Note**, to access the attributes, the first character must **always** be in lowercase. So the correct way to access the POS-value is
+```
+myVariableName.posValue
+```
+
+Some annotations, like the `Token`-annotations, can also reference to other annotations (if present). For example the `Token`-annotation contains also the information about the lemma, about the stem and about the POS-tag of the word (of course only if you used a lemmatizer/stemmer/POS-tagger). So lets say the variable `myToken` is of Type `Token`, then you can access the POS-value for this Token via
+```
+myToken.pos.posValue
+```
+
+## Access Methods ##
+
+In the previous section, we outputted all annotations. Usually we are only interested in certain types of annotations, for example in all Tokens with a certain Part-of-Speech-Value. Next we present different access methods to select specific annotations. A short summary of the different access methods can be found in the uimaFIT documentation: [uimaFIT Guide and References](https://uima.apache.org/d/uimafit-current/tools.uimafit.book.html#d5e218).
+
+
+### Select ###
+The most simple access method is `select`, which takes two arguments:
+
+```
+select(jcas, AnnotationType)
+```
+
+For example if we like to access Token-annotations. From the above script we see that the classpath for the Token annotation is `de.tudarmstadt.ukp.dkpro.core.api.segmentation.type.Token`. So in order to select all Token-Annotations, we must first import the corresponding module. After that, we can call select:
+
+```
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import Token
+# ...
+select(jcas, Token)
+```
+
+
+Select returns a Java Collection over which we can for example iterate. Sometime we like to use the Jython internal methods for lists. This can be achieved quite easily:
+
+```
+allTokens = [token for token in select(jcas, Token)]
+print "Number of tokens: %d" % (len(allTokens))
+print "First three tokens:"
+print allTokens[0:3]
+```
+
+
+DKPro uses for the different annotations different types. For example there are 12 base types for Part-of-Speech. We can use this type information to select only certain annotations we are interested in.
+
+For example we like to get all nouns from a text. We can do this the following way:
+
+```
+from de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos import * #Import all POS types
+# ...
+for jcas in pipeline:
+   for pos in select(jcas, NN):
+       print pos.coveredText + " " + pos.posValue
+```
+
+In case we need more fine-grained POS-tagset than the 12 bases types, we can select all POS-annotations an then filter for the `posValue`. The following script for example only gets the POS-annotations with a 'VBP' as POS-Value.
+
+```
+for jcas in pipeline:
+   for pos in select(jcas, POS):
+       if pos.posValue == 'VBP'
+          print pos.coveredText + " " + pos.posValue
+```
+
+
+In case we like to have this as list, e.g. for further processing, we can use the built-in list construction operations provided by Jython.
+
+```
+for jcas in pipeline:
+   vbpPos = [pos for pos in select(jcas, POS) if pos.posValue == 'VBP']
+   print vbpPos
+```
+
+### SelectBetween ###
+With the `selectBetween` method we can select the annotations that are between two given annotations.
+
+For example we want to get all tokens between the first an the second noun in the document. We can then execute the following script:
+
+```
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * #Token, Sentence etc
+from de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos import * #Nouns etc
+
+# ....
+for jcas in pipeline:
+   nouns = [pos for pos in select(jcas, NN)]
+   if len(nouns) >= 2:
+       print nouns[0].coveredText+" "+nouns[0].posValue
+       tokensBetween = [token for token in selectBetween(Token, nouns[0], nouns[1])]
+       for token in tokensBetween:
+           print token.coveredText
+       print nouns[1].coveredText+" "+nouns[1].posValue
+```
+
+By calling `selectBetween(Token, nouns[0], nouns[1])` we get a Java collection of all Tokens between the first and second noun. With the trick mentioned before we convert it to a Jython list.
+
+### SelectCovered ###
+This method fetchs all annotations covered by the given annotation. For example given a sentence, we can use this method to fetch all POS oder Named Entities annotations.
+
+The following code demonstrates the usage of selectCovered. First we select all sentences and then we select all nouns in the sentences.
+
+```
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * #Token, Sentence etc
+from de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos import * #Nouns etc
+# ...
+for jcas in pipeline:
+   for sentence in select(jcas, Sentence):
+        print sentence.coveredText
+       
+        for pos in selectCovered(NN, sentence): #Select all nouns in the sentence
+           print pos.coveredText + " " + pos.posValue
+           
+        print "--------"
+```
+
+
+### SelectCovering ###
+The opposite to selectCovered is selectCovering. Given a certain annotation, for example a POS annotation, we can get easily the covering sentence for this annotation by calling selectCovering:
+
+```
+for jcas in pipeline:
+    for pos in select(jcas, NN): #Select all nouns in the sentence
+        sentencesForNoun = [sentence for sentence in selectCovering(Sentence, pos)]
+        print "%s/%s | %s" % (pos.coveredText, pos.posValue, sentencesForNoun[0].coveredText)
+```
+
+selectCovering returns all annotations of the specified type which covers the provided annotation, i.e. in the above example it returns all `Sentence` annotations that span over the provided `pos` annotation. So even if there can be only such annotation, the method still returns a Java collection.
+
+
+
+### SelectCovered and SelectCovering with Begin and End Positions ###
+
+Instead of passing a concrete annotation, we can also pass a start and end position to both functions.
+
+So with `selectCovered(jcas, POS, 0, 50)` we get all POS annotation within the range character 0 to character 50.
+
+With `selectCovering(jcas, Sentence, 0, 10)` we would get all sentences that cover at least over the span 0 to 10.
+
+Note, `selectCovered` is quite useful to get annotations from a specific part of the document (e.g. for the first 100 or last 100 characters), whereas the useful usage of `selectCovering` is quite limited.
+
+
+### SelectPreceding and SelectFollowing ###
+`selectPreceding` and `selectFollowing` selects the preceding / following n annotations for a given annotation.
+
+```
+for jcas in pipeline:
+    for noun in select(jcas, NN): #Select all nouns in the jcas        
+        print "\n\nNoun: "+noun.coveredText
+        
+        print "Preceding verbs:"
+        for verb in selectPreceding(V, noun, 2):
+            print verb.coveredText
+        
+        print "Following verbs:"
+        for verb in selectFollowing(V, noun, 2):
+            print verb.coveredText
+```

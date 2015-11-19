@@ -1,0 +1,213 @@
+# Named Entity Recognition #
+**Table of contents**
+
+
+## Introduction ##
+Named Entity Recognition (NER) is the task of identifying named entities like persons, locations or organizations in text. For further information, see [Wikipedia - Named-entity Recognition](http://en.wikipedia.org/wiki/Named-entity_recognition)
+
+In this tutorial we present scripts for the _Stanford NER_ as well as for the _OpenNlp NameFinder_.
+
+## Named Entity Recognition using Stanford NER ##
+
+The Stanford NER comes with several models for different languages. For further details, please see [Stanford NER](http://nlp.stanford.edu/software/CRF-NER.shtml).
+
+The Stanford NER models for English come with either 3 classes (Location, Person, Organization), 4 classes (Location, Person, Organization, Misc) or 7 classes (Time, Location, Organization, Person, Money, Percent, Date). For German, we only have models with 4 classes (Location, Person, Organization, Misc). Further details on the German NER models can be found [here](http://www.nlpado.de/~sebastian/software/ner_german.shtml).
+
+For the names of the models in DKPro, please see the [models spreadsheet](https://docs.google.com/spreadsheet/pub?key=0ApGcdapz0xSYdFNTREhKeFVEU1RsQzc0V0NKcE04b3c&single=true&gid=0&output=html).
+
+```
+#!/usr/bin/env jython
+# Filename: ner.jy
+"""
+Reads in a specific text file and detects named entities
+Run by: jython ner.jy <filename> <language-code>
+"""
+
+
+# Fix classpath scanning - otherise uimaFIT will not find the UIMA types
+from java.lang import Thread
+from org.python.core.imp import *
+Thread.currentThread().contextClassLoader = getSyspathJavaLoader()
+
+# Dependencies and imports for DKPro modules
+from jip.embed import require
+
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+
+# StanfordNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.stanfordnlp-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.stanfordnlp import *
+
+# OpenNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.opennlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.opennlp import *
+
+
+# Dependencies for selecting specific annotations like sentences/tokens
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * #Token, Sentence, Lemma, Stem 
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type import * #Chunk, PennTree
+from de.tudarmstadt.ukp.dkpro.core.api.ner.type import * #NamedEntity 
+
+# uimaFIT imports
+from org.apache.uima.fit.util.JCasUtil import *
+from org.apache.uima.fit.pipeline.SimplePipeline import *
+from org.apache.uima.fit.factory.CollectionReaderFactory import *
+from org.apache.uima.fit.factory.AnalysisEngineFactory import *
+
+
+# Access to commandline arguments
+import sys
+
+# Check that all necessary arguments have been passed to the program
+if len(sys.argv) < 3:
+    print globals()['__doc__'] % locals()
+    sys.exit(1)
+
+
+
+# Assemble and run pipeline
+pipeline = iteratePipeline(
+  createReaderDescription(TextReader,
+    TextReader.PARAM_SOURCE_LOCATION, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     ),
+  createEngineDescription(OpenNlpSegmenter),
+  createEngineDescription(StanfordNamedEntityRecognizer));
+
+for jcas in pipeline:
+    print "Named Entities:"
+    for ne in select(jcas, NamedEntity):
+        print ne.coveredText+"\t"+ne.value
+
+```
+
+
+You can execute the script by calling:
+```
+jython ner.jy examples/example-ner-en.txt en 2> log.txt
+```
+
+for the English version. For German, you can call this script by:
+```
+jython ner.jy examples/example-ner-de.txt de 2> log.txt
+```
+
+The named entity annotations have the type `NamedEntity` and are located in the `de.tudarmstadt.ukp.dkpro.core.api.ner.type` package. The following code selects all named entities and prints them:
+
+```
+# Import from de.tudarmstadt.ukp.dkpro.core.api.ner.type to be able to select NamedEntity
+from de.tudarmstadt.ukp.dkpro.core.api.ner.type import *  
+
+# ... My program code ... 
+
+for ne in select(jcas, NamedEntity):
+  print ne.coveredText+"\t"+ne.value
+```
+
+### Selecting a different model ###
+For the Stanford NER, we can choose different models. To do so, we need set the `StanfordNamedEntityRecognizer.PARAM_VARIANT` parameter to the desired model. For example:
+```
+createEngineDescription(StanfordNamedEntityRecognizer, StanfordNamedEntityRecognizer.PARAM_VARIANT, "hgc_175m_600.crf")
+```
+
+The above code selects the model for German which was trained on the Huge German Corpus (HGC).
+
+## OpenNlp NameFinder ##
+
+OpenNlp also comes with an implementation which allows us to detect named entities in a sentence. Further information can be found on the [OpenNlp website](https://opennlp.apache.org/documentation/1.5.3/manual/opennlp.html#tools.namefind).
+
+In contrast to Stanford NER, the OpenNlp !Namefinder only finds certain named entities, depending on the selected model. The existent models can be found in the DKPro models overview.
+
+The following script gives an example how the OpenNlp NameFinder can be applied to identify named entities in a text. Note, OpenNlpNameFinder works only for English texts.
+
+```
+#!/usr/bin/env jython
+# Filename: ner_opennlp.jy
+"""
+Reads in a specific text file and detects named entities
+Run by: jython ner_opennlp.jy <filename> <language-code> <OpenNlpNameFinder-model>
+"""
+
+
+# Fix classpath scanning - otherise uimaFIT will not find the UIMA types
+from java.lang import Thread
+from org.python.core.imp import *
+Thread.currentThread().contextClassLoader = getSyspathJavaLoader()
+
+# Dependencies and imports for DKPro modules
+from jip.embed import require
+
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+
+# OpenNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.opennlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.opennlp import *
+
+
+# Dependencies for selecting specific annotations like sentences/tokens
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * #Token, Sentence, Lemma, Stem 
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type import * #Chunk, PennTree
+from de.tudarmstadt.ukp.dkpro.core.api.ner.type import * #NamedEntitiy 
+
+# uimaFIT imports
+from org.apache.uima.fit.util.JCasUtil import *
+from org.apache.uima.fit.pipeline.SimplePipeline import *
+from org.apache.uima.fit.factory.CollectionReaderFactory import *
+from org.apache.uima.fit.factory.AnalysisEngineFactory import *
+
+
+# Access to commandline arguments
+import sys
+
+# Check that all necessary arguments have been passed to the program
+if len(sys.argv) < 4:
+    print globals()['__doc__'] % locals()
+    sys.exit(1)
+
+nameFinderModel = sys.argv[3]
+
+# Assemble and run pipeline
+pipeline = iteratePipeline(
+  createReaderDescription(TextReader,
+    TextReader.PARAM_SOURCE_LOCATION, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     ),
+  createEngineDescription(OpenNlpSegmenter),
+  createEngineDescription(OpenNlpNameFinder,                           
+    OpenNlpNameFinder.PARAM_VARIANT, nameFinderModel)
+);
+
+for jcas in pipeline:
+    print "Named Entities:"
+    for ne in select(jcas, NamedEntity):
+        print ne.coveredText+"\t"+ne.value
+
+```
+
+
+We can call this script by executing:
+```
+jython ner_opennlp.jy examples/example-ner-en.txt en location 2> log.txt
+```
+
+Note, the script expects as a third parameter the model name that should be used. Currently (as of version 1.6.2), the following models exist: location, money, organization, percentage, time, date, person.
+
+If you like to tag multiple types of named entities, for example persons and locations, you need to create for each an own engine description and pass the different models. The pipeline would then look like:
+
+```
+pipeline = iteratePipeline(
+  createReaderDescription(TextReader,
+    TextReader.PARAM_SOURCE_LOCATION, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     ),
+  createEngineDescription(OpenNlpSegmenter),
+  createEngineDescription(OpenNlpNameFinder,   #Find persons                         
+    OpenNlpNameFinder.PARAM_VARIANT, 'person'),
+  createEngineDescription(OpenNlpNameFinder,  #Find locations                         
+    OpenNlpNameFinder.PARAM_VARIANT, 'location'),
+);
+```

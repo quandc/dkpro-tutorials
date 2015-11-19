@@ -1,0 +1,28 @@
+# The Practitioner's Cookbook for Linked Lexical Resources - UBY Code Examples #
+
+This tutorial is based on Uby version **0.4.0**.
+
+## Step-by-step Instructions for the Setup ##
+
+System requirements
+  * 7 GB free disk space for the uby\_open dump
+  * MySQL server installed
+  * 4 GB RAM minimum
+
+Import a UBY database dump into a MySQL database
+  * [How to import a UBY database dump (uby@Google Code)](http://code.google.com/p/uby/wiki/DbImportTutorial)
+
+Installing Eclipse
+  * [Eclipse Installation and Setup](EclipseInstallationAndSetup.md)
+
+Connecting to Maven repositories
+  * You do not have to modify your settings.xml or create one, because the pom in the example Maven project is configured to connect to public Maven repositories maintained by UKP Lab, TU Darmstadt. If you encounter problems, you can follow the instructions here: [UKP Public Maven Repository](http://code.google.com/p/dkpro-core-asl/wiki/UkpMavenRepository)
+
+
+Check out the tutorial project in Eclipse:
+  * Eclipse -> Window -> Open Perspective -> Other -> SVN Repository Exploring -> Add SVN Repository
+  * Give the URL of the repository: https://dkpro-tutorials.googlecode.com/svn/
+  * Right click on the trunk/tag/branch of the project you want to checkout: https://dkpro-tutorials.googlecode.com/svn/de.tudarmstadt.ukp.uby.tutorial/trunk/de.tudarmstadt.ukp.uby.tutorial.examples -> Check out as Maven Project (do not rename the project)
+
+## Tutorial Code ##
+> Tutorial project: https://dkpro-tutorials.googlecode.com/svn/de.tudarmstadt.ukp.uby.tutorial/trunk/de.tudarmstadt.ukp.uby.tutorial.examples

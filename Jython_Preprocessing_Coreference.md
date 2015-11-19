@@ -1,0 +1,109 @@
+# Coreference #
+**Table of contents**
+
+
+## Introduction ##
+Coreference occurs when two or more expressions in a text refer to the same entity. For example in the sentence _The students were too lazy to study, therefore they failed the test_ the words _students_ and _they_ refer to the same entity.
+
+Coreference resolution is the process of identifying these coreference and linking them together. In the current version of DKPro, we can use the _StanfordCoreferenceResolver_ for detecting and resolving coreferences.
+
+For further information, see [Wikipedia-Coreference](http://en.wikipedia.org/wiki/Coreference).
+
+## Stanford Coreference Resolver ##
+
+The following script demonstrates the usage of the _StanfordCoreferenceResolver_. The resolver requires that the text is segmented, is annotated with POS-tags, that lemmas are derived, that named entities are tagged and that the sentences are parsed. Therefore we must invoke several components before we can use the _StanfordCoReferenceResolver_. For details on the Stanford Coreference Resolver, please see [Stanford Coref Website](http://nlp.stanford.edu/software/dcoref.shtml).
+
+
+```
+#!/usr/bin/env jython
+# Filename: coreference.jy
+"""
+Reads in a specific text file and coreference chains
+Run by: jython coreference.jy <filename> <language-code>
+"""
+
+
+# Fix classpath scanning - otherise uimaFIT will not find the UIMA types
+from java.lang import Thread
+from org.python.core.imp import *
+Thread.currentThread().contextClassLoader = getSyspathJavaLoader()
+
+# Dependencies and imports for DKPro modules
+from jip.embed import require
+
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+
+# StanfordNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.stanfordnlp-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.stanfordnlp import *
+
+
+# Dependencies for selecting specific annotations like sentences/tokens
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * #Token, Sentence, Lemma, Stem 
+from de.tudarmstadt.ukp.dkpro.core.api.coref.type import * #CoreferenceChain, CoreferenceLink
+
+
+# uimaFIT imports
+from org.apache.uima.fit.util.JCasUtil import *
+from org.apache.uima.fit.pipeline.SimplePipeline import *
+from org.apache.uima.fit.factory.CollectionReaderFactory import *
+from org.apache.uima.fit.factory.AnalysisEngineFactory import *
+
+
+# Access to commandline arguments
+import sys
+
+# Check that all necessary arguments have been passed to the program
+if len(sys.argv) < 3:
+    print globals()['__doc__'] % locals()
+    sys.exit(1)
+
+
+
+# Assemble and run pipeline
+pipeline = iteratePipeline(
+  createReaderDescription(TextReader,
+    TextReader.PARAM_SOURCE_LOCATION, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     ),
+  createEngineDescription(StanfordSegmenter),
+  createEngineDescription(StanfordPosTagger),
+  createEngineDescription(StanfordLemmatizer),
+  createEngineDescription(StanfordParser),
+  createEngineDescription(StanfordNamedEntityRecognizer),
+  createEngineDescription(StanfordCoreferenceResolver,
+                          StanfordCoreferenceResolver.PARAM_POSTPROCESSING, True),
+  );
+
+for jcas in pipeline:
+    for corefChain in select(jcas, CoreferenceChain):
+        print "\n\nCoreference Chain:"
+        print "Link\tLeft context\t...\tRight context"
+        link = corefChain.getFirst()
+        
+        while link != None:
+            sentence = selectCovering(Sentence, link).get(0)
+            precedingTokens = [token.coveredText for token in selectPreceding(Token, link, 5)]
+            followingTokens = [token.coveredText for token in selectFollowing(Token, link, 5)]
+            print "%s\t%s\t...\t%s" % (link.coveredText, " ".join(precedingTokens), " ".join(followingTokens))
+            link = link.getNext();
+        
+
+```
+
+You can invoke the script by calling:
+
+```
+jython coreference.jy examples/example-coreference-en.txt en
+```
+
+Note, parsing can require a lot of memory. Maybe you need to increase the amount Jython is allowed to allocate. For further details, see [Parsing](Jython_Preprocessing_Parsing.md).
+
+The _StanfordCoreferenceResolver_ produces two different annotation types: _CoreferenceLink_ and _CoreferenceChain_.
+
+Each referring expression (e.g. named entites or pronouns) are annotated with an _CoreferenceLink_-annotation. If two or more referring expression map to the same identity, a _CoreferenceChain_ is created which captures the information.
+
+
+The previous script ouputs all detected coreference chains. By invoking the _getFirst()_ method, we get the first _CoreferenceLink_ of the chain. Succeeding coreferences to the same entity can be get by calling _getNext()_. So the above script prints all referring expressions, that refer to the same entity. Additionally, the left and right context is given for each referring expression.

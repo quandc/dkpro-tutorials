@@ -1,0 +1,16 @@
+# Introduction #
+The following pages are a step-by-step tutorial how DKPro can be used with Jython. First we give you an overview of basics of DKPro. Next, we present basic methods to read data into an DKPro pipeline as well as how different components, e.g. for part-of-speech tagging, named entity recognition or parsing, can be applied.
+
+After knowing how to read-in data and to process it, we cover the topic of creating a structured output for further processing, for example how can the results written to an XML or an Excel file.
+
+The file part covers the topic how we can combine DKPro with WEKA, a machine learning tool. We will present some use-cases how features, e.g. for authorship identification, can be extracted using DKPro and how a classifier can be learned in WEKA.
+
+# Content #
+Please check the sidebar on the left side.
+
+
+# Acknowledgments #
+
+The development of this tutorial is supported by [DARIAH-DE project](https://de.dariah.eu/).
+
+[![](https://de.dariah.eu/liferay-dariah-theme/images/dariah-logo.png)](https://de.dariah.eu/)

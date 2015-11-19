@@ -1,0 +1,78 @@
+# CheatSheet #
+**Table of contents**
+
+
+## Introduction ##
+This page is a CheatSheet for Jython and DKPro. It contains many useful information in a compressed way. The intention of this sheet is _not_ to introduce or explain certain concepts. Instead, it is intended as a lookup cheat for the advanced user. For an introduction into DKPro and the different concepts, please see the previous articles.
+
+## Imports ##
+The following lines show the necessary imports for the main components of our scripts.
+
+### Input / Output ###
+
+```
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+```
+
+
+### NLP Tools ###
+```
+# BerkeleyParser
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.berkeleyparser-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.berkeleyparser import *
+
+# BreakIteratorSegmenter
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.tokit-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.tokit import *
+
+# ClearNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.clearnlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.clearnlp import *
+
+# LanguageTool
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.languagetool-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.languagetool import *
+
+# MaltParser
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.maltparser-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.maltparser import *
+
+# MateTools
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.matetools-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.matetools import *
+
+# OpenNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.opennlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.opennlp import *
+
+# StanfordNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.stanfordnlp-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.stanfordnlp import *
+
+# TreeTagger
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.treetagger-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.treetagger import *
+```
+
+### Annotation Types ###
+```
+#Sentence, Token, Lemma, Stem
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * 
+
+#Chunk
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type.chunk import * 
+
+#Constituent
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type.constituent import * 
+
+#Dependency
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency import * 
+
+#NamedEntity
+from de.tudarmstadt.ukp.dkpro.core.api.ner.type import *
+
+#POS
+from de.tudarmstadt.ukp.dkpro.core.api.lexmorph.type.pos import *
+```

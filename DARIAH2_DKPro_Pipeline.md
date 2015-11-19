@@ -1,0 +1,10 @@
+# Introduction #
+
+This DKPro pipeline processes text and writes out the most import linguistic information, for example POS-tags or parsing information.
+
+# SVN #
+
+To check out the SVN, run the following command:
+```
+svn checkout http://dkpro-tutorials.googlecode.com/svn/de.tudarmstadt.ukp.dkpro.dariah/pipeline/ dariah-pipeline
+```

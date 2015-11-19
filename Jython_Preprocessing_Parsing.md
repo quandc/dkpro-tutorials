@@ -1,0 +1,295 @@
+# Parsing #
+**Table of contents**
+
+
+## Introduction ##
+
+## Constituency Parsing ##
+
+For constituency parsing, we can select between the _BerkeleyParser_, the _OpenNlpParser_ and the _StanfordParser_.
+
+The following script parses the input file and returns an output which follows the conventions used by Penn !Treebank.
+
+```
+#!/usr/bin/env jython
+# Filename: parsing_constituency.jy
+"""
+Reads in a specific text file and prints a parse tree following the conventions of Penn TreeBank
+Run by: jython parsing_constituency.jy <filename> <language-code>
+"""
+
+
+# Fix classpath scanning - otherise uimaFIT will not find the UIMA types
+from java.lang import Thread
+from org.python.core.imp import *
+Thread.currentThread().contextClassLoader = getSyspathJavaLoader()
+
+from java.lang import Exception
+from java.lang import OutOfMemoryError
+
+# Dependencies and imports for DKPro modules
+from jip.embed import require
+
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+
+# OpenNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.opennlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.opennlp import *
+
+# StanfordNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.stanfordnlp-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.stanfordnlp import *
+
+# BerkeleyParser
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.berkeleyparser-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.berkeleyparser import *
+
+# Dependencies for selecting specific annotations like sentences/tokens
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import *
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type import *
+
+
+# uimaFIT imports
+from org.apache.uima.fit.util.JCasUtil import *
+from org.apache.uima.fit.pipeline.SimplePipeline import *
+from org.apache.uima.fit.factory.CollectionReaderFactory import *
+from org.apache.uima.fit.factory.AnalysisEngineFactory import *
+
+
+# Access to commandline arguments
+import sys
+
+# Check that all necessary arguments have been passed to the program
+if len(sys.argv) < 3:
+    print globals()['__doc__'] % locals()
+    sys.exit(1)
+    
+# Function to print the parser output
+def printParseOutput(name, pipeline):
+    print "\n\n%s:" % name
+    for jcas in pipeline:
+        for tree in select(jcas, PennTree):
+            print tree.pennTree
+
+# Our text reader which we use for all parser
+reader = createReaderDescription(TextReader,
+    TextReader.PARAM_PATH, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     )
+
+
+# Run OpenNlpParser
+
+try:
+    pipeline = iteratePipeline(
+      reader,
+      createEngineDescription(OpenNlpSegmenter),
+      createEngineDescription(OpenNlpPosTagger),
+      createEngineDescription(OpenNlpParser,                          
+        OpenNlpParser.PARAM_WRITE_PENN_TREE, True)
+    );
+    
+    printParseOutput("OpenNlpParser", pipeline)
+except OutOfMemoryError:
+    print 'OpenNlpParser out of memory'
+except:
+    print 'OpenNlpParser is not working'
+
+    
+# Run StanfordParser
+try:
+    pipeline = iteratePipeline(
+          reader,
+          createEngineDescription(StanfordSegmenter),
+          createEngineDescription(StanfordPosTagger),
+          createEngineDescription(StanfordParser,                          
+            StanfordParser.PARAM_WRITE_PENN_TREE, True)
+        );
+        
+    printParseOutput("StanfordParser", pipeline)
+except OutOfMemoryError:
+    print 'StanfordParser out of memory'
+except:
+    print 'StanfordParser is not working'
+
+    
+
+# Run BerkeleyParser
+try:
+    pipeline = iteratePipeline(
+          reader,
+          createEngineDescription(OpenNlpSegmenter),
+          createEngineDescription(OpenNlpPosTagger),
+          createEngineDescription(BerkeleyParser,                          
+            BerkeleyParser.PARAM_WRITE_PENN_TREE, True)
+        );
+        
+    printParseOutput("BerkeleyParser", pipeline)
+except OutOfMemoryError:
+    print 'BerkeleyParser out of memory'
+except:
+    print 'BerkeleyParser is not working'
+    
+
+```
+
+You can execute the script by running:
+```
+jython parsing_constituency.jy examples/example-en.txt en 2> log.txt
+```
+
+
+It might happen, that the parser runs **out of memory**. To allow Jython to allocate more memory, try the following command:
+```
+Linux: export JAVA_MEM="-Xmx1g"
+Windows: SET JAVA_MEM="-Xmx1g"
+```
+
+We calling this command, we allow any Java application to allocate up to 1 GB of memory. If your application still need more memory, you can change the `1g` e.g. to `2g` for 2 GB of memory or `4g` for 4 GB of memory. But be careful, allowing your script to allocate more memory than available will extremly slow down your machine. So keep your RAM size in mind for your experiments.
+
+## Dependency Parsing ##
+
+For dependency parsing, we can select between the _ClearNlpDependencyParser_, the _MaltParser_, and the _MateParser_.
+
+```
+#!/usr/bin/env jython
+# Filename: parsing_dependency.jy
+"""
+Reads in a specific text file and prints a parse tree following the conventions of Penn TreeBank
+Run by: jython parsing_dependency.jy <filename> <language-code>
+"""
+
+
+# Fix classpath scanning - otherise uimaFIT will not find the UIMA types
+from java.lang import Thread
+from org.python.core.imp import *
+Thread.currentThread().contextClassLoader = getSyspathJavaLoader()
+
+from java.lang import Exception
+from java.lang import OutOfMemoryError
+
+# Dependencies and imports for DKPro modules
+from jip.embed import require
+
+# Text Reader
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.io.text-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.io.text import *
+
+# OpenNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.opennlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.opennlp import *
+
+# ClearNlp
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.clearnlp-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.clearnlp import *
+
+# MaltParser
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.maltparser-asl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.maltparser import *
+
+# MateTools
+require('de.tudarmstadt.ukp.dkpro.core:de.tudarmstadt.ukp.dkpro.core.matetools-gpl:1.6.2')
+from de.tudarmstadt.ukp.dkpro.core.matetools import *
+
+
+# Dependencies for selecting specific annotations like sentences/tokens
+from de.tudarmstadt.ukp.dkpro.core.api.segmentation.type import * #Token, Sentence, Stem, Lemma
+from de.tudarmstadt.ukp.dkpro.core.api.syntax.type.dependency import * #Dependency
+
+
+# uimaFIT imports
+from org.apache.uima.fit.util.JCasUtil import *
+from org.apache.uima.fit.pipeline.SimplePipeline import *
+from org.apache.uima.fit.factory.CollectionReaderFactory import *
+from org.apache.uima.fit.factory.AnalysisEngineFactory import *
+
+
+# Access to commandline arguments
+import sys
+
+# Check that all necessary arguments have been passed to the program
+if len(sys.argv) < 3:
+    print globals()['__doc__'] % locals()
+    sys.exit(1)
+    
+# Function to print the parser output
+def printDependencyOutput(name, pipeline):
+    print "\n\n%s:" % name
+    print "Token\tDependency Type\tGovernor"
+    for jcas in pipeline:
+        for token in select(jcas, Token):
+            dependencyAnnotations = selectCovered(Dependency, token)
+            depend = dependencyAnnotations[0] if len(dependencyAnnotations) > 0 else None
+            dependencyType = depend.dependencyType if depend != None else "-"
+            governorText = depend.getGovernor().coveredText if depend != None else "-"
+            print "%s\t%s\t%s" % (token.coveredText, dependencyType, governorText)
+
+# Our text reader which we use for all parser
+reader = createReaderDescription(TextReader,
+    TextReader.PARAM_PATH, sys.argv[1],
+    TextReader.PARAM_LANGUAGE, sys.argv[2],
+     )
+
+
+# Run ClearNlpDependencyParser
+try:
+    pipeline = iteratePipeline(
+          reader,
+          createEngineDescription(ClearNlpSegmenter),
+          createEngineDescription(ClearNlpPosTagger),
+          createEngineDescription(ClearNlpLemmatizer),
+          createEngineDescription(ClearNlpDependencyParser)
+        );
+        
+    printDependencyOutput("ClearNlpDependencyParser", pipeline)
+except OutOfMemoryError:
+    print 'ClearNlpDependencyParser out of memory'
+except:
+    print 'ClearNlpDependencyParser is not working'
+    
+ 
+# Run MaltParser
+try:
+    pipeline = iteratePipeline(
+          reader,
+          createEngineDescription(OpenNlpSegmenter),
+          createEngineDescription(OpenNlpPosTagger),
+          createEngineDescription(MaltParser)
+        );
+        
+    printDependencyOutput("MaltParser", pipeline)
+except OutOfMemoryError:
+    print 'MaltParser out of memory'
+except:
+    print 'MaltParser is not working'
+
+
+# Run MateParser
+try:
+    pipeline = iteratePipeline(
+          reader,
+          createEngineDescription(OpenNlpSegmenter),
+          createEngineDescription(MatePosTagger),
+          createEngineDescription(MateParser)
+        );
+        
+    printDependencyOutput("MateParser", pipeline)
+except OutOfMemoryError:
+    print 'MateParser out of memory'
+except:
+    print 'MateParser is not working'
+    
+
+
+```
+
+
+You can execute the script by running:
+```
+jython parsing_dependency.jy examples/example-en.txt en 2> log.txt
+```
+
+
+The `MaltParser` expects POS-tags using the Treebank tag set. We can get these tags using the `OpenNlpPosTagger`.
